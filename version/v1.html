@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <title>One</title>
+
+
+    <style>
+      :root {
+        --color-black: rgb(0 0 0);
+        --color-white: rgb(255 255 255);
+        --color-gray: rgb(200 200 200);
+        --font-family: "Courier New", Courier, monospace;
+        --font-size: 1rem;
+      }
+      
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--color-black);
+        font-family: var(--font-family);
+        font-size: var(--font-size);
+      }
+
+      main {
+        align-items: center;
+        background-color: var(--color-gray);
+        display: flex;
+        height: 100vmin;
+        justify-content: center;
+      }
+
+      main > .container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .controls,
+      .view {
+        background-color: var(--color-white);
+        border: 1px solid var(--color-black);
+      }
+
+      .controls {
+        align-items: center;
+        border-top-style: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        padding: 20px;
+        row-gap: 20px;
+      }
+
+      form {
+        display: flex;
+        justify-content: center;
+        justify-content: space-around;
+        column-gap: 5px;
+      }
+
+      input,
+      input:focus-visible {
+        border-radius: 0;
+        border-width: 1px;
+      }
+
+      button {
+        background-color: transparent;
+        border-style: none;
+        font-family: var(--font-family);
+        font-size: var(--font-size);
+        cursor: pointer;
+      }
+
+      pre {
+        font-weight: normal;
+        font-family: var(--font-family);
+      }
+
+      .view {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      canvas {
+        border: 1px solid var(--color-black);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <div class="container">
+        <h1>One</h1>
+        <div class="view">
+          <canvas width="500" height="500"></canvas>
+        </div>
+        <div class="controls">
+          <p id="displayTurn"></p>
+          <p>T=Turn X=Horizontal Y=Vertical</p>
+          <form>
+            <select>
+              <option value="fire" selected>Fire</option>
+              <option value="life">Life</option>
+              <option value="water">Water</option>
+            </select>
+            <input type="text" name="spell" />
+            <button type="submit">Cast</button>
+          </form>
+          <ol></ol>
+        </div>
+      </div>
+    </main>
+  </body>
+
+  <script type="module">
+    const black = "rgb(0 0 0 )";
+
+    const red = "rgb(255 0 0)";
+    const green = "rgb(0 255 0)";
+    const blue = "rgb(0 0 255)";
+
+    const size = 500;
+    const grid = 5;
+    const unit = size / grid;
+
+    const canvas = document.querySelector("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let turn = 0;
+    const spells = [];
+
+    const drawGrid = () => {
+      ctx.fillStyle = "rgb(0 0 0)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < grid; i++) {
+        const x = i * unit;
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, 0);
+        ctx.lineTo(x + 0.5, size);
+        ctx.stroke();
+      }
+
+      for (let i = 1; i < size; i++) {
+        const y = i * unit;
+        ctx.beginPath();
+        ctx.moveTo(0, y + 0.5);
+        ctx.lineTo(size, y + 0.5);
+        ctx.stroke();
+      }
+    };
+
+    const drawSpell = (ix, iy, spells) => {
+      for (const { fn, color } of spells) {
+        let render;
+        try {
+          render = fn(ix, iy);
+        } catch (e) {
+          console.error(e);
+        }
+
+        if (render) {
+          ctx.fillStyle = color;
+          const x = ix * unit;
+          const y = iy * unit;
+          ctx.fillRect(x, y, unit, unit);
+        }
+      }
+    };
+
+    const drawSpells = () => {
+      const spellFns = [];
+      for (const spell of spells) {
+        let fn;
+        try {
+          fn = new Function("x", "y", `return ${spell.spell}`);
+        } catch (e) {
+          console.error(e);
+          continue;
+        }
+        spellFns.push({ fn, color: spell.element });
+      }
+
+      for (let ix = 0; ix < grid; ix++) {
+        for (let iy = 0; iy < grid; iy++) {
+          drawSpell(ix, iy, spellFns);
+        }
+      }
+    };
+
+    const hero = {
+      x: 0,
+      y: 0,
+    };
+    const drawHero = () => {
+      ctx.fillStyle = black;
+      ctx.fillRect(hero.x, hero.y, unit, unit);
+    };
+
+    const down = () => {
+      const y = hero.y + unit;
+      if (y < size) hero.y = y;
+    };
+    const left = () => {
+      const x = hero.x - unit;
+      if (x >= 0) hero.x = x;
+    };
+
+    const right = () => {
+      const x = hero.x + unit;
+      if (x < size) hero.x = x;
+    };
+    const up = () => {
+      const y = hero.y - unit;
+      if (y >= 0) hero.y = y;
+    };
+
+    const keys = ["ArrowLeft", "ArrowUp", "ArrowDown", "ArrowRight"];
+    document.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (!keys.includes(key)) return;
+
+      if (key === "ArrowDown") down();
+      if (key === "ArrowLeft") left();
+      if (key === "ArrowRight") right();
+      if (key === "ArrowUp") up();
+
+      window.requestAnimationFrame(render);
+    });
+
+    const displayTurn = document.getElementById("displayTurn");
+    if (displayTurn === null) throw new Error("displayTurn is null");
+
+    const selectElement = document.querySelector("select");
+    const spellInput = document.querySelector("input");
+    const spellList = document.querySelector("ol");
+
+    const elements = new Map();
+    elements.set("fire", red);
+    elements.set("life", green);
+    elements.set("water", blue);
+
+    const form = document.querySelector("form");
+    form.onsubmit = (event) => {
+      event.preventDefault();
+
+      displayTurn.innerText = `Turn: ${turn}`;
+
+      const color = elements.get(selectElement.value);
+      if (typeof color === "undefined")
+        throw new Error(`no color mapping for "${color}"`);
+
+      const spell = { element: color, spell: spellInput.value };
+      const li = document.createElement("li");
+      const pre = document.createElement("pre");
+      pre.innerText = JSON.stringify(spell);
+      li.appendChild(pre);
+      spellList.appendChild(li);
+
+      spells.push(spell);
+
+      turn++;
+      window.requestAnimationFrame(render);
+    };
+
+    const render = () => {
+      ctx.clearRect(0, 0, size, size);
+
+      drawSpells();
+      drawHero();
+      drawGrid();
+    };
+    window.requestAnimationFrame(render);
+  </script>
+</html>

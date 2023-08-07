@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <title>Wizard</title>
+
+    <style>
+      :root {
+        --color-gray: rgb(200 200 200);
+        --color-black: rgb(0 0 0);
+        --font-family: "Courier New", Courier, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--color-gray);
+        font-family: var(--font-family);
+      }
+
+      h2 {
+        font-weight: normal;
+        font-size: 1rem;
+      }
+
+      .container {
+        height: 100vmin;
+        display: flex;
+        flex-direction: column;
+        row-gap: 1rem;
+        align-items: center;
+        justify-content: center;
+      }
+
+      main {
+        display: flex;
+        flex-direction: row;
+        column-gap: 1rem;
+      }
+
+      .game {
+        display: flex;
+        flex-direction: column;
+      }
+
+      button {
+        background-color: transparent;
+        border-style: none;
+        font-family: var(--font-family);
+        font-size: var(--font-size);
+        cursor: pointer;
+      }
+
+      canvas {
+        border: 1px solid var(--color-black);
+      }
+
+      .test {
+        color: magenta;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>wizard_1.png</h1>
+      <main>
+        <select>
+          <option value="none" selected>none</option>
+          <option value="white">white</option>
+          <option value="black">black</option>
+          <option value="pink">pink</option>
+          <option value="magenta">magenta</option>
+          <option value="blue">blue</option>
+        </select>
+        <canvas width="256" height="256"></canvas>
+
+        <form>
+          <button type="Submit">Save</button>
+        </form>
+      </main>
+      <pre></pre>
+    </div>
+
+    <script>
+      const { floor } = Math;
+
+      const canvas = document.querySelector("canvas");
+      const pre = document.querySelector("pre");
+      const form = document.querySelector("form");
+      const select = document.querySelector("select");
+
+      const update = () => {};
+
+      const canvasSize = 256;
+      const gridSize = 16;
+      const grid = [];
+      for (let y = 0; y < gridSize; y++) {
+        const arr = [];
+        for (let x = 0; x < gridSize; x++) {
+          arr.push("none");
+        }
+        grid.push(arr);
+      }
+
+      const unit = canvasSize / gridSize;
+
+      const ctx = canvas.getContext("2d");
+
+      const renderRules = () => {
+        ctx.strokeStyle = "rgb(127 127 127)";
+        ctx.lineWidth = 1;
+
+        for (let i = 1; i <= gridSize; i++) {
+          const x = i * unit;
+          ctx.beginPath();
+          ctx.moveTo(x + 0.5, 0);
+          ctx.lineTo(x + 0.5, canvasSize);
+          ctx.stroke();
+
+          const y = i * unit;
+          ctx.beginPath();
+          ctx.moveTo(0, y + 0.5);
+          ctx.lineTo(canvasSize, y + 0.5);
+          ctx.stroke();
+        }
+      };
+
+      const draw = () => {
+        for (let x = 0; x < gridSize; x++) {
+          for (let y = 0; y < gridSize; y++) {
+            const color = grid[y][x];
+
+            if (color === "none") {
+              ctx.clearRect(x * unit, y * unit, unit, unit);
+              continue;
+            }
+
+            ctx.fillStyle = color;
+            ctx.fillRect(x * unit, y * unit, unit, unit);
+          }
+        }
+
+        // renderRules();
+      };
+
+      const updateGrid = () => {
+        pre.innerText = grid.map((row) => row.join(", ")).join(`\n`);
+      };
+
+      canvas.onclick = (event) => {
+        const { offsetX, offsetY } = event;
+        const x = floor(offsetX / unit);
+        const y = floor(offsetY / unit);
+
+        grid[y][x] = select.value;
+        updateGrid();
+        window.requestAnimationFrame(draw);
+      };
+
+      form.onsubmit = (event) => {
+        event.preventDefault();
+      };
+
+      updateGrid();
+      window.requestAnimationFrame(draw);
+    </script>
+  </body>
+</html>

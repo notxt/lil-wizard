@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <title>Lil' Wizard</title>
+
+    <style>
+      :root {
+        --color-gray: rgb(200 200 200);
+        --font-family: "Courier New", Courier, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--color-gray);
+        font-family: var(--font-family);
+      }
+
+      h2 {
+        font-weight: normal;
+        font-size: 1rem;
+      }
+
+      .container {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        height: 100vmin;
+        justify-content: center;
+        row-gap: 1rem;
+      }
+
+      nav {
+        display: flex;
+        flex-direction: column;
+        row-gap: 1rem;
+      }
+
+      ul {
+        list-style: none;
+      }
+
+      a {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Lil' Wizard</h1>
+      <nav>
+        <section>
+          <h2>Assets</h2>
+          <ul>
+            <li><a href="/asset/wizard.html">Wizard</a></li>
+          </ul>
+        </section>
+        <section>
+          <h2>Versions</h2>
+          <ul>
+            <li><a href="/version/v1.html">v1</a></li>
+            <li><a href="/version/v2.html">v2</a></li>
+          </ul>
+        </section>
+      </nav>
+    </div>
+  </body>
+</html>
