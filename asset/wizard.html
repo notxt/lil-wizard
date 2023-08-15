@@ -9,9 +9,11 @@
 
     <style>
       :root {
-        --color-gray: rgb(200 200 200);
+        --color-background: rgb(255 255 255);
         --color-black: rgb(0 0 0);
+        --color-gray: rgb(200 200 200);
         --font-family: "Courier New", Courier, monospace;
+        /* font-size: 3px; */
       }
 
       * {
@@ -21,33 +23,39 @@
       }
 
       body {
-        background-color: var(--color-gray);
+        background-color: var(--color-background);
         font-family: var(--font-family);
-      }
-
-      h2 {
-        font-weight: normal;
-        font-size: 1rem;
-      }
-
-      .container {
-        height: 100vmin;
+        align-items: center;
         display: flex;
         flex-direction: column;
-        row-gap: 1rem;
-        align-items: center;
-        justify-content: center;
+        row-gap: 1vw;
       }
 
       main {
+        column-gap: 1vw;
         display: flex;
         flex-direction: row;
-        column-gap: 1rem;
+        row-gap: 2vw;
       }
 
-      .game {
+      h2 {
+        font-size: 0.8rem;
+      }
+
+      .frames {
         display: flex;
         flex-direction: column;
+        row-gap: 1vw;
+      }
+
+      .frames > section {
+        display: flex;
+        flex-direction: column;
+        row-gap: 0.2vw;
+      }
+
+      select {
+        font-size: 1rem;
       }
 
       button {
@@ -55,23 +63,27 @@
         border-style: none;
         font-family: var(--font-family);
         font-size: var(--font-size);
-        cursor: pointer;
       }
 
-      canvas {
+      ul {
+        list-style-type: none;
+      }
+
+      w-frame {
         border: 1px solid var(--color-black);
+        display: flex;
       }
 
-      .test {
-        color: magenta;
+      pre {
+        font-size: 0.5rem;
       }
     </style>
   </head>
 
   <body>
-    <div class="container">
-      <h1>wizard_1.png</h1>
-      <main>
+    <h1>wizard_editor</h1>
+    <main>
+      <form class="color">
         <select>
           <option value="none" selected>none</option>
           <option value="white">white</option>
@@ -80,97 +92,59 @@
           <option value="magenta">magenta</option>
           <option value="blue">blue</option>
         </select>
-        <canvas width="256" height="256"></canvas>
+        <button type="submit">add color</button>
+      </form>
 
-        <form>
-          <button type="Submit">Save</button>
-        </form>
-      </main>
-      <pre></pre>
-    </div>
+      <div id="frames" class="frames"></div>
+      <div id="preview"></div>
+    </main>
 
-    <script>
+    <script type="module">
+      import { Frame } from "./frame.js";
+
+      customElements.define("w-frame", Frame);
+
       const { floor } = Math;
 
-      const canvas = document.querySelector("canvas");
-      const pre = document.querySelector("pre");
+      // controls
       const form = document.querySelector("form");
       const select = document.querySelector("select");
 
-      const update = () => {};
+      // debug
+      const pre = document.querySelector("pre");
 
-      const canvasSize = 256;
-      const gridSize = 16;
-      const grid = [];
-      for (let y = 0; y < gridSize; y++) {
-        const arr = [];
-        for (let x = 0; x < gridSize; x++) {
-          arr.push("none");
-        }
-        grid.push(arr);
-      }
-
-      const unit = canvasSize / gridSize;
-
+      // preview
+      const previewSize = 128;
+      const preview = document.getElementById("preview");
+      const canvas = document.createElement("canvas");
+      preview.appendChild(canvas);
+      canvas.width = previewSize;
+      canvas.height = previewSize;
       const ctx = canvas.getContext("2d");
 
-      const renderRules = () => {
-        ctx.strokeStyle = "rgb(127 127 127)";
-        ctx.lineWidth = 1;
+      const frameNum = 3;
+      const frames = [];
 
-        for (let i = 1; i <= gridSize; i++) {
-          const x = i * unit;
-          ctx.beginPath();
-          ctx.moveTo(x + 0.5, 0);
-          ctx.lineTo(x + 0.5, canvasSize);
-          ctx.stroke();
+      const frameContainer = document.getElementById("frames");
+      for (let i = 0; i < frameNum; i++) {
+        const frame = new Frame({ previewSize, imageSize: 8 });
+        frameContainer.appendChild(frame);
+        frames.push(frame);
+      }
 
-          const y = i * unit;
-          ctx.beginPath();
-          ctx.moveTo(0, y + 0.5);
-          ctx.lineTo(canvasSize, y + 0.5);
-          ctx.stroke();
-        }
+      let i = 0;
+      const render = () => {
+        ctx.clearRect(0, 0, previewSize, previewSize);
+        const imageData = frames[i].imageData;
+        console.log(imageData);
+        ctx.putImageData(imageData, 0, 0);
+        i = i++ % frameNum;
       };
 
-      const draw = () => {
-        for (let x = 0; x < gridSize; x++) {
-          for (let y = 0; y < gridSize; y++) {
-            const color = grid[y][x];
-
-            if (color === "none") {
-              ctx.clearRect(x * unit, y * unit, unit, unit);
-              continue;
-            }
-
-            ctx.fillStyle = color;
-            ctx.fillRect(x * unit, y * unit, unit, unit);
-          }
-        }
-
-        // renderRules();
-      };
-
-      const updateGrid = () => {
-        pre.innerText = grid.map((row) => row.join(", ")).join(`\n`);
-      };
-
-      canvas.onclick = (event) => {
-        const { offsetX, offsetY } = event;
-        const x = floor(offsetX / unit);
-        const y = floor(offsetY / unit);
-
-        grid[y][x] = select.value;
-        updateGrid();
-        window.requestAnimationFrame(draw);
-      };
-
-      form.onsubmit = (event) => {
-        event.preventDefault();
-      };
-
-      updateGrid();
-      window.requestAnimationFrame(draw);
+      setInterval(() => {
+        window.requestAnimationFrame(() => render());
+      }, 1000);
+      window.requestAnimationFrame(() => render());
     </script>
   </body>
 </html>

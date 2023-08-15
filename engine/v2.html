@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <title>v2</title>
+
+    <style>
+      @font-face {
+        font-family: "VT323";
+        src: url("VT323-Regular.ttf");
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --color-background: rgb(0 0 0);
+        --color-blue: hsl(240 100% 70%);
+        --color-font: rgb(230 230 230);
+        --color-green: hsl(120 50% 70%);
+        --color-outline: magenta;
+        --color-red: hsl(0 70% 70%);
+        --font-family: VT323, monospace;
+        font-size: 35px;
+      }
+
+      body {
+        background-color: var(--color-background);
+        font-family: var(--font-family);
+        color: var(--color-font);
+      }
+
+      h2 {
+        font-weight: normal;
+        font-size: calc(1rem * (18 / 16));
+        margin-bottom: calc(1rem * (5 / 16));
+      }
+
+      .container {
+        height: 100vmin;
+        display: flex;
+        flex-direction: column;
+        row-gap: 2rem;
+        align-items: center;
+        justify-content: center;
+      }
+
+      main {
+        display: flex;
+        flex-direction: row;
+        column-gap: 1rem;
+      }
+
+      *:focus-visible {
+        border-color: var(--color-outline);
+        outline-color: var(--color-outline);
+        outline-style: solid;
+        outline-width: 1px;
+      }
+
+      fieldset {
+        border-style: none;
+      }
+
+      select {
+        background-color: transparent;
+        border-radius: 0;
+        border: 1px solid var(--color-font);
+        color: var(--color-font);
+        font-family: var(--font-family);
+        font-size: calc(1rem * (14 / 16));
+        padding: 0 calc(1rem * (1 / 16));
+      }
+
+      input {
+        background-color: transparent;
+        border-radius: 0;
+        border: 1px solid var(--color-font);
+        color: var(--color-font);
+        font-family: var(--font-family);
+        font-size: calc(1rem * (14 / 16));
+      }
+
+      button {
+        background-color: transparent;
+        border-style: none;
+        border: 1px solid var(--color-font);
+        color: var(--color-font);
+        cursor: pointer;
+        font-family: var(--font-family);
+        font-size: calc(1rem * (14 / 16));
+        padding: 0 calc(1rem * (4 / 16));
+      }
+
+      form.submit-move {
+        display: flex;
+        flex-direction: column;
+        row-gap: calc(1rem * (5 / 16));
+      }
+
+      ol {
+        padding-inline-start: calc(1rem * (20 / 16));
+      }
+
+      pre {
+        font-family: var(--font-family);
+      }
+
+      pre.board {
+        letter-spacing: calc(1rem * (8 / 16));
+        line-height: calc(1rem * (14 / 16));
+      }
+
+      pre.board > span.red {
+        color: var(--color-red);
+      }
+      pre.board > span.green {
+        color: var(--color-green);
+      }
+      pre.board > span.blue {
+        color: var(--color-blue);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Lil' Wizard [v2]</h1>
+      <main>
+        <div>
+          <h2>Cast</h2>
+          <form id="castSpell" class="submit-move">
+            <fieldset>
+              <label for="inputPower">Power</label>
+              <input id="inputPower" name="inputPower" type="number" />
+            </fieldset>
+            <fieldset>
+              x =
+              <input
+                id="inputX"
+                type="text"
+                required
+                placeholder="Incantation for x"
+              />
+              + <span id="wizX"></span>
+            </fieldset>
+            <fieldset>
+              y =
+              <input
+                id="inputY"
+                type="text"
+                required
+                placeholder="incantation for y"
+              />
+              + <span id="wizY"></span>
+            </fieldset>
+            <select id="moveType" required>
+              <option value="">Element</option>
+              <option value="R">Red</option>
+              <option value="G">Green</option>
+              <option value="B">Blue</option>
+            </select>
+            <button type="submit">Cast</button>
+          </form>
+        </div>
+
+        <div>
+          <h2>Active Spells</h2>
+          <ol></ol>
+        </div>
+
+        <div>
+          <h2>Board</h2>
+          <pre id="board" class="board"></pre>
+        </div>
+
+        <div>
+          <h2>Turn</h2>
+          <form id="incTurn">
+            <button>Inc</button>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const wiz = {
+        x: 0,
+        y: 0,
+        power: 8,
+      };
+
+      const inputPower = document.getElementById("inputPower");
+      const inputX = document.getElementById("inputX");
+      const wizX = document.getElementById("wizX");
+      const inputY = document.getElementById("inputY");
+      const wizY = document.getElementById("wizY");
+      const selectType = document.getElementById("moveType");
+      const castSpell = document.getElementById("castSpell");
+
+      inputPower.value = wiz.power;
+      inputX.value = "i";
+      inputX.focus();
+      wizX.innerText = wiz.x;
+      inputY.value = "0";
+      wizY.innerText = wiz.y;
+
+      const spellList = document.querySelector("ol");
+
+      const incTurn = document.getElementById("incTurn");
+      const view = document.getElementById("board");
+
+      const size = 8;
+
+      const spells = [];
+      const renderSpells = () => {
+        spellList.innerHTML = "";
+
+        const nodes = spells.map((spell) => {
+          const item = document.createElement("li");
+          const pre = document.createElement("pre");
+          pre.innerText = `type: ${spell.type}
+turn: ${spell.turn}
+power: ${spell.power}
+x = ${spell.xCode}
+y = ${spell.yCode}`;
+          item.appendChild(pre);
+
+          return item;
+        });
+
+        spellList.append(...nodes);
+      };
+
+      const resetBoard = () => {
+        const board = [];
+        for (let x = 0; x < size; x++) {
+          const row = [];
+          for (let y = 0; y < size; y++) {
+            row.push("O");
+          }
+          board.push(row);
+        }
+        return board;
+      };
+      let board = resetBoard();
+
+      const renderBoard = () => {
+        view.innerHTML = board
+          .map((row) =>
+            row
+              .map((value) => {
+                if (value === "O") return value;
+
+                const span = document.createElement("span");
+                span.innerText = value;
+                const style =
+                  value === "R"
+                    ? "red"
+                    : value === "G"
+                    ? "green"
+                    : value === "B"
+                    ? "blue"
+                    : "black";
+
+                span.classList.add(style);
+                return span.outerHTML;
+              })
+              .join("")
+          )
+          .join(`\n`);
+      };
+
+      const update = () => {
+        board = resetBoard();
+
+        for (let i = 0; i < size; i++) {
+          for (const spell of spells) {
+            if (spell.power < 1) {
+              const index = spells.indexOf(spell);
+              if (index === -1)
+                throw new Error("unable to remove exhausted spell");
+
+              spells.splice(index, 1);
+
+              console.log(
+                "continue",
+                "remove exhausted spell",
+                JSON.stringify(spell)
+              );
+              continue;
+            }
+
+            let x;
+            try {
+              x = spell.xFn(i, spell.turn);
+            } catch (error) {
+              console.error(error);
+              const index = spells.indexOf(spell);
+              if (index === -1)
+                throw new Error("unable to remove spell with xFn error");
+
+              spells.splice(index, 1);
+              continue;
+            }
+
+            let y;
+            try {
+              y = spell.yFn(i, spell.turn);
+            } catch (error) {
+              console.error(error);
+              const index = spells.indexOf(spell);
+              if (index === -1)
+                throw new Error("unable to remove spell with yFn error");
+
+              spells.splice(index, 1);
+              continue;
+            }
+
+            if (x >= size || y >= size) {
+              console.log(
+                "continue",
+                "x >= size || y >= size",
+                x >= size || y >= size
+              );
+              spell.power--;
+              continue;
+            }
+
+            let currentValue = board[y][x];
+            const newValue = spell.type;
+            if (currentValue === newValue) {
+              console.log(
+                "continue",
+                "currentValue === newValue",
+                currentValue === newValue
+              );
+              continue;
+            }
+            spell.power--;
+
+            const value =
+              newValue === "O"
+                ? currentValue
+                : currentValue === "O"
+                ? newValue
+                : newValue === "R" && currentValue === "G"
+                ? newValue
+                : newValue === "R" && currentValue === "B"
+                ? currentValue
+                : newValue === "G" && currentValue === "B"
+                ? newValue
+                : newValue === "G" && currentValue === "R"
+                ? currentValue
+                : newValue === "B" && currentValue === "R"
+                ? newValue
+                : newValue === "B" && currentValue === "G"
+                ? currentValue
+                : "O";
+
+            console.log(`type: ${spell.type}
+turn: ${spell.turn}
+power: ${spell.power}
+x = ${spell.xCode}
+y = ${spell.yCode}
+
+x,y = ${x},${y}
+
+current: ${currentValue}
+new: ${newValue}
+value: ${value}`);
+
+            board[y][x] = value;
+          }
+        }
+
+        for (const spell of spells) {
+          spell.turn++;
+        }
+
+        renderSpells();
+        renderBoard();
+      };
+
+      castSpell.onsubmit = (event) => {
+        event.preventDefault();
+
+        const power = inputPower.value;
+        if (!power) return;
+
+        const xCode = inputX.value;
+        if (xCode === "") return;
+
+        const yCode = inputY.value;
+        if (yCode === "") return;
+
+        const type = selectType.value;
+        if (type === "") return;
+
+        let xFn;
+        try {
+          xFn = new Function("i", "t", `return ${xCode}`);
+        } catch (error) {
+          console.error("failed to create xFn");
+          throw error;
+        }
+
+        let yFn;
+        try {
+          yFn = new Function("i", "t", `return ${yCode}`);
+        } catch (error) {
+          console.error("failed to create yFn");
+          throw error;
+        }
+
+        const spell = {
+          power,
+          startX: wiz.x,
+          startY: wiz.y,
+          turn: 0,
+          type,
+          xCode,
+          xFn,
+          yCode,
+          yFn,
+        };
+
+        spells.push(spell);
+        update();
+
+        selectType.value = "";
+        inputX.value = "";
+        inputX.focus();
+        inputY.value = "";
+      };
+
+      incTurn.onsubmit = (event) => {
+        event.preventDefault();
+
+        update();
+      };
+
+      renderBoard();
+    </script>
+  </body>
+</html>
