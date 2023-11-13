@@ -1,30 +1,13 @@
-import { getColor } from "./color.js";
-import { Draw } from "./draw.js";
-import { gameFactory } from "./game.js";
-// import { titleScreenFactory } from "./title.js";
+import { drawFactory } from "./draw.js";
+import { move, moveFactory } from "./move.js";
 
 const { floor } = Math;
-
-// load assets
-const sprite = new Image();
-
-sprite.src = "asset/sprite.png";
 
 const body = document.querySelector("body");
 if (body === null) throw new Error("body is null");
 
-const windowWidth = window.innerWidth;
-const windowHeight = window.innerHeight;
-
-const windowAspectRatio = windowWidth / windowHeight;
-const displayAspectRatio = 16 / 9;
-
-let height = windowHeight;
-let width = floor(height * displayAspectRatio);
-if (displayAspectRatio > windowAspectRatio) {
-  width = windowWidth;
-  height = floor(width / displayAspectRatio);
-}
+const width = window.innerWidth;
+const height = window.innerHeight;
 
 const canvas = document.createElement("canvas");
 canvas.setAttribute("width", width.toString());
@@ -34,19 +17,86 @@ body.appendChild(canvas);
 const ctx = canvas.getContext("2d");
 if (ctx === null) throw new Error("ctx is null");
 
-const color = getColor();
+const sprite = new Image();
 
-// const titleScreen = titleScreenFactory(ctx, width, height, color);
-const game = gameFactory(ctx, width, height, color);
+export type Direction = "up" | "down" | "left" | "right";
+type Move = Direction | null;
 
-const progression: [Draw] = [game];
-let progressionIndex: 0 = 0;
+export type Hero = {
+  x: number;
+  y: number;
+  spriteWidth: number;
+  spriteHeight: number;
+  width: number;
+  height: number;
+  direction: Direction;
+  move: Move;
+  moveSpeed: number;
+  moveFrame: number;
+  moveFrameSpeed: number;
+};
 
+const spriteWidth = 16;
+const spriteHeight = 18;
+const spriteScale = 2;
+
+const hero: Hero = {
+  x: floor(width / 2),
+  y: floor(height / 2),
+  spriteWidth,
+  spriteHeight,
+  width: spriteWidth * spriteScale,
+  height: spriteHeight * spriteScale,
+  direction: "right",
+  move: null,
+  moveSpeed: 2,
+  moveFrame: 0,
+  moveFrameSpeed: 8,
+};
+
+const codeUp = "ArrowUp";
+const codeDown = "ArrowDown";
+const codeLeft = "ArrowLeft";
+const codeRight = "ArrowRight";
+const directionCodes = [codeUp, codeDown, codeLeft, codeRight];
+
+document.onkeydown = (event) => {
+  const { code } = event;
+
+  if (directionCodes.includes(code)) {
+    if (code === codeUp) hero.direction = "up";
+    if (code === codeDown) hero.direction = "down";
+    if (code === codeLeft) hero.direction = "left";
+    if (code === codeRight) hero.direction = "right";
+
+    hero.move = hero.direction;
+  }
+};
+
+document.onkeyup = (event) => {
+  const { code } = event;
+
+  if (code === "ArrowUp") hero.move = null;
+  if (code === "ArrowDown") hero.move = null;
+  if (code === "ArrowLeft") hero.move = null;
+  if (code === "ArrowRight") hero.move = null;
+};
+
+const move = moveFactory(width, height);
+const draw = drawFactory(ctx, width, height, sprite);
+
+let frame = 0;
 const loop: FrameRequestCallback = () => {
-  const current = progression[progressionIndex];
-  current();
+  move(hero);
+  draw(frame, hero);
+  frame++;
 
   window.requestAnimationFrame(loop);
 };
 
-window.requestAnimationFrame(loop);
+const loaded = () => {
+  window.requestAnimationFrame(loop);
+};
+
+sprite.onload = () => loaded();
+sprite.src = "sprite.png";
